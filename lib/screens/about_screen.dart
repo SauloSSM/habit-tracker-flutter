@@ -48,7 +48,7 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 28),
-            Text('Integrantes', style: Theme.of(context).textTheme.titleLarge),
+            Text('Integrante', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             for (final member in teamMembers)
               ListTile(
@@ -64,7 +64,7 @@ class AboutScreen extends StatelessWidget {
               ),
             const SizedBox(height: 16),
             const Text(
-              'Nomes dos integrantes a preencher pela equipe.',
+              'Integrante responsável pelo projeto acadêmico.',
               style: TextStyle(fontSize: 12, color: AppColors.muted),
             ),
             const SizedBox(height: 28),

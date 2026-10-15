@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:habit_tracker/config/project_info.dart';
 import 'package:habit_tracker/screens/about_screen.dart';
 import 'package:habit_tracker/screens/habit_checkin_screen.dart';
 import 'package:habit_tracker/screens/habit_history_screen.dart';
@@ -38,8 +39,8 @@ void main() {
       await tester.tap(find.byTooltip('Sobre o aplicativo'));
       await tester.pumpAndSettle();
       expect(find.byType(AboutScreen), findsOneWidget);
-      await tester.scrollUntilVisible(find.text('[Nome do integrante 1]'), 300);
-      expect(find.text('[Nome do integrante 1]'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text(teamMembers.first), 300);
+      expect(find.text(teamMembers.first), findsOneWidget);
       final backTooltip = MaterialLocalizations.of(
         tester.element(find.byType(AboutScreen)),
       ).backButtonTooltip;
@@ -48,6 +49,16 @@ void main() {
       expect(find.byType(HomeScreen), findsOneWidget);
 
       await tapText(tester, 'Perfil');
+      await tester.scrollUntilVisible(
+        find.text('Sair da conta'),
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
       await tapText(tester, 'Sair da conta');
       expect(state.auth.user, isNull);
       expect(state.habits.habits, isEmpty);

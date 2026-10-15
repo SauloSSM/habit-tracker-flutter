@@ -1,5 +1,4 @@
-/// Substitua os placeholders pelos nomes reais antes de apresentar o trabalho.
+/// Identificação do integrante responsável pelo projeto acadêmico.
 const teamMembers = <String>[
-  '[Nome do integrante 1]',
-  '[Nome do integrante 2]',
+  'Saulo da Silva Stuque Menegucci — RA 2840482511024',
 ];
