@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#214E42">
+  <meta name="description" content="HabitTracker acadêmico: pequenos passos, consistência com gentileza.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="HabitTracker">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <title>HabitTracker</title>
+  <style>body{margin:0;background:#f7f6f0}#loading{font:16px system-ui;color:#214e42;display:grid;place-items:center;min-height:100vh}</style>
+</head>
+<body>
+  <div id="loading" role="status">Cultivando um novo começo…</div>
+  <script>window.addEventListener('flutter-first-frame', () => document.getElementById('loading')?.remove());</script>
+  <script src="flutter_bootstrap.js" async></script>
+  <noscript>Ative o JavaScript para abrir o HabitTracker.</noscript>
+</body>
+</html>
