@@ -142,6 +142,20 @@ void main() {
   );
 
   test(
+    'criação pelo notifier persiste hábitos distintos também na Web',
+    () async {
+      final state = HabitsNotifier(repository);
+      addTearDown(state.dispose);
+      await state.bindUser('a');
+      expect(await state.create('Ler', 'Uma página', {1, 3}), isTrue);
+      expect(await state.create('Caminhar', '', {2, 4}), isTrue);
+      expect(state.habits.map((habit) => habit.id).toSet(), hasLength(2));
+      expect((await db.collection('habitos').get()).docs, hasLength(2));
+      expect((await db.collection('realizacoes').get()).docs, hasLength(2));
+    },
+  );
+
+  test(
     'CRUD e check-ins mantêm as duas coleções consistentes e não duplicam',
     () async {
       await repository.put('a', habit('h1'), create: true);

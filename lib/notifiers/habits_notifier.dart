@@ -168,7 +168,8 @@ class HabitsNotifier extends ChangeNotifier {
   ) async {
     if (!_validate(title, weekdays)) return false;
     final habit = Habit(
-      id: '${_now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}',
+      // Bitwise shifts truncate to 32 bits on Web: 1 << 32 becomes zero.
+      id: '${_now().microsecondsSinceEpoch}-${Random.secure().nextInt(0x100000000)}',
       title: title.trim(),
       description: description.trim(),
       weekdays: weekdays,
