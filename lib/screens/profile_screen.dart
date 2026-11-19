@@ -112,13 +112,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 20),
           const Notice(
-            'Demonstração acadêmica: o nome e as contas criadas ficam na memória desta execução. Seus hábitos são salvos neste dispositivo.',
+            'Seu perfil e seus hábitos são salvos na sua conta e sincronizados pelo Firebase.',
           ),
           const SizedBox(height: 20),
           OutlinedButton.icon(
             onPressed: auth.busy
                 ? null
                 : () async {
+                    setState(() => _attempted = true);
                     final success = await auth.logout();
                     if (success && context.mounted) {
                       Navigator.pushNamedAndRemoveUntil(

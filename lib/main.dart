@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 
 import 'notifiers/auth_notifier.dart';
 import 'notifiers/habits_notifier.dart';
-import 'repositories/demo_auth_repository.dart';
-import 'repositories/habits_repository.dart';
+import 'repositories/firebase_auth_repository.dart';
+import 'repositories/firestore_habits_repository.dart';
 import 'screens/about_screen.dart';
 import 'screens/create_habit_screen.dart';
 import 'screens/edit_habit_screen.dart';
@@ -25,11 +27,14 @@ import 'theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    final preferences = await SharedPreferences.getInstance();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await FirebaseAuth.instance.authStateChanges().first;
     runApp(
       HabitTrackerApp(
-        auth: AuthNotifier(DemoAuthRepository()),
-        habits: HabitsNotifier(HabitsRepository(preferences)),
+        auth: AuthNotifier(FirebaseAuthRepository()),
+        habits: HabitsNotifier(FirestoreHabitsRepository()),
       ),
     );
   } catch (_) {
@@ -44,7 +49,7 @@ Future<void> main() async {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    'Não foi possível abrir o armazenamento local. Verifique as permissões do navegador ou dispositivo.',
+                    'Não foi possível conectar ao Firebase. Verifique sua conexão e tente novamente.',
                   ),
                   const SizedBox(height: 16),
                   FilledButton(

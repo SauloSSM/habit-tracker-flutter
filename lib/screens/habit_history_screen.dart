@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../notifiers/habits_notifier.dart';
+import '../models/habit.dart';
 import '../services/local_dates.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_shell.dart';
@@ -20,13 +21,28 @@ class _HabitHistoryScreenState extends State<HabitHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<HabitsNotifier>();
+    return StreamBuilder<List<Habit>>(
+      key: ValueKey(state.userId),
+      stream: state.realizationStream,
+      initialData: state.realizations,
+      builder: (context, snapshot) => _content(context, state, snapshot),
+    );
+  }
+
+  Widget _content(
+    BuildContext context,
+    HabitsNotifier state,
+    AsyncSnapshot<List<Habit>> snapshot,
+  ) {
     final selected = state.find(_filter) == null ? null : _filter;
-    final habits = state.habits.where(
+    final habits = (snapshot.data ?? []).where(
       (h) => selected == null || h.id == selected,
     );
     final entries = [
       for (final h in habits)
-        for (final day in h.checkins) (title: h.title, date: day),
+        if (state.find(h.id) != null)
+          for (final day in h.checkins)
+            (title: state.find(h.id)!.title, date: day),
     ]..sort((a, b) => b.date.compareTo(a.date));
     final days = entries.map((e) => e.date).toSet();
     final today = localDay(DateTime.now());
@@ -149,27 +165,48 @@ class _HabitHistoryScreenState extends State<HabitHistoryScreen> {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 14),
-          if (entries.isEmpty)
+          if (snapshot.hasError) ...[
+            const Notice(
+              'Não foi possível carregar as realizações.',
+              error: true,
+            ),
+            TextButton(
+              onPressed: state.retry,
+              child: const Text('Tentar novamente'),
+            ),
+          ] else if (state.loading ||
+              state.historyLoading ||
+              snapshot.connectionState == ConnectionState.waiting &&
+                  !snapshot.hasData)
+            const Center(child: CircularProgressIndicator())
+          else if (entries.isEmpty)
             const EmptyState(
               title: 'Seu histórico começa com um passo',
               description:
                   'Quando você registrar uma realização, ela aparecerá aqui.',
               icon: Icons.history_rounded,
             ),
-          for (final entry in entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.check_circle_outline_rounded,
-                    color: AppColors.green,
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: snapshot.hasError ? 0 : entries.length,
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: AppColors.green,
+                    ),
+                    title: Text(entry.title),
+                    subtitle: Text(displayDate(DateTime.parse(entry.date))),
                   ),
-                  title: Text(entry.title),
-                  subtitle: Text(displayDate(DateTime.parse(entry.date))),
                 ),
-              ),
-            ),
+              );
+            },
+          ),
         ],
       ),
     );

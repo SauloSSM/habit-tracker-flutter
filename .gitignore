@@ -3,6 +3,10 @@
 .pub-cache/
 .tools/
 .validation/
+node_modules/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 build/
 .flutter-plugins*
 android/.gradle/

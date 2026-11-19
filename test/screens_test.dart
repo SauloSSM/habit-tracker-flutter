@@ -31,7 +31,7 @@ Future<({AuthNotifier auth, HabitsNotifier habits})> openApp(
       DemoAuthRepository.demoPassword,
     );
   }
-  final habits = HabitsNotifier(HabitsRepository(prefs));
+  final habits = HabitsNotifier(LocalHabitsRepository(prefs));
   await tester.pumpWidget(HabitTrackerApp(auth: auth, habits: habits));
   await tester.pumpAndSettle();
   return (auth: auth, habits: habits);

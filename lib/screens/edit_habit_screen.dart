@@ -17,7 +17,7 @@ class EditHabitScreen extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: const Text('Excluir este hábito?'),
         content: const Text(
-          'O hábito e todos os seus registros serão excluídos deste dispositivo. Esta ação não pode ser desfeita.',
+          'O hábito e todos os seus registros serão excluídos da sua conta. Esta ação não pode ser desfeita.',
         ),
         actions: [
           TextButton(

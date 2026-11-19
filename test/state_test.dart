@@ -19,7 +19,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     preferences = await SharedPreferences.getInstance();
     now = DateTime(2026, 10, 14, 16);
-    habits = HabitsNotifier(HabitsRepository(preferences), now: () => now);
+    habits = HabitsNotifier(LocalHabitsRepository(preferences), now: () => now);
     await habits.bindUser('user-a');
   });
 
@@ -84,7 +84,7 @@ void main() {
     await habits.bindUser('user-a');
     expect(habits.habits.single.title, 'Privado de A');
     expect(habits.habits.single.checkins, {'2026-10-14'});
-    final restored = HabitsNotifier(HabitsRepository(preferences));
+    final restored = HabitsNotifier(LocalHabitsRepository(preferences));
     addTearDown(restored.dispose);
     await restored.bindUser('user-a');
     expect(restored.habits.single.toJson(), habits.habits.single.toJson());
@@ -94,7 +94,7 @@ void main() {
   });
 
   test('JSON inválido não é sobrescrito por uma nova gravação', () async {
-    final key = HabitsRepository(preferences).keyFor('corrupt');
+    final key = LocalHabitsRepository(preferences).keyFor('corrupt');
     await preferences.setString(key, '{inválido');
     await habits.bindUser('corrupt');
     expect(habits.error, isNotNull);
@@ -182,7 +182,7 @@ void main() {
   );
 }
 
-class _DelayedRepository extends HabitsRepository {
+class _DelayedRepository extends LocalHabitsRepository {
   _DelayedRepository(super.preferences);
   final gate = Completer<void>();
   @override

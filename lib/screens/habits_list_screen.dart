@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../notifiers/habits_notifier.dart';
+import '../models/habit.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common.dart';
 import '../widgets/habit_card.dart';
@@ -32,23 +33,42 @@ class HabitsListScreen extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: state.habits.isEmpty
-                  ? ListView(
-                      children: const [
-                        EmptyState(
-                          title: 'Todo começo tem espaço',
-                          description:
-                              'Crie seu primeiro hábito pelo botão acima. Escolha algo pequeno e possível.',
-                        ),
-                      ],
-                    )
-                  : ListView.builder(
-                      itemCount: state.habits.length,
-                      itemBuilder: (context, index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: HabitCard(habit: state.habits[index]),
+              child: StreamBuilder<List<Habit>>(
+                key: ValueKey(state.userId),
+                stream: state.habitStream,
+                initialData: state.habits,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: TextButton(
+                        onPressed: state.retry,
+                        child: const Text('Tentar novamente'),
                       ),
-                    ),
+                    );
+                  }
+                  if (state.loading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final habits = snapshot.data ?? [];
+                  return habits.isEmpty
+                      ? ListView(
+                          children: const [
+                            EmptyState(
+                              title: 'Todo começo tem espaço',
+                              description:
+                                  'Crie seu primeiro hábito pelo botão acima. Escolha algo pequeno e possível.',
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          itemCount: habits.length,
+                          itemBuilder: (context, index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: HabitCard(habit: habits[index]),
+                          ),
+                        );
+                },
+              ),
             ),
           ],
         ),

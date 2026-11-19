@@ -10,6 +10,7 @@ class AuthNotifier extends ChangeNotifier {
   AuthNotifier(this.repository) : _user = repository.currentUser {
     _subscription = repository.userChanges.listen(
       (user) {
+        if (busy) return;
         _user = user;
         notifyListeners();
       },
@@ -44,6 +45,7 @@ class AuthNotifier extends ChangeNotifier {
     } catch (_) {
       error = 'Não foi possível concluir. Tente novamente.';
     } finally {
+      _user = repository.currentUser;
       busy = false;
       notifyListeners();
     }

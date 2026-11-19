@@ -1,156 +1,115 @@
-# HabitTracker — Parte 1
+﻿# HabitTracker — Parte 2
 
-Projeto acadêmico de **Desenvolvimento Mobile**, em Flutter, Dart e Material 3. A proposta é acompanhar hábitos com gentileza: dias sem realização não apagam o progresso acumulado.
+Projeto acadêmico em Flutter, Dart e Material 3: hábitos e progresso com gentileza. A Parte 2 mantém as telas, o tema, o logotipo e as rotas da Parte 1 e integra Firebase Authentication e Cloud Firestore, sem backend próprio.
 
-**Escopo:** interfaces, navegação e estado com ChangeNotifier/provider. Login, cadastro e recuperação são demonstrações locais. Não há Firebase, backend, API de aplicação ou banco remoto.
+Implementação na branch `parte-2-firebase`; o histórico da Parte 1 permanece em `main`. Os arquivos Firebase e as alterações de dependências encontrados no início foram aproveitados. `AUDITORIA_FINAL.md` registra a Parte 1, não valida esta integração.
 
-**Auditoria final:** [relatório RF001–RF007](AUDITORIA_FINAL.md), com evidências de **21 testes automatizados aprovados** e análise estática sem problemas. Recuperação real por e-mail não está implementada.
+## Requisitos da Parte 2
 
-## Execução
+| Requisito | Implementação | Código |
+| --- | --- | --- |
+| RF001 | Login por e-mail/senha, logout, restauração de sessão, erros em português e solicitação real de recuperação pelo SDK Firebase | `main.dart`, `AuthNotifier`, `FirebaseAuthRepository`, telas de login/recuperação |
+| RF002 | Cadastro Auth com nome, telefone e e-mail; documento `usuarios/{uid}` com UID e datas do servidor; edição de nome | `FirebaseAuthRepository.register`, `_profile`, `updateName` |
+| RF003 | CRUD e check-ins no Firestore, feedback de gravação, documentos com mais de cinco campos e isolamento por UID | `HabitsNotifier`, `FirestoreHabitsRepository`, `firestore.rules` |
+| RF004 | Dois fluxos distintos de snapshots: `habitos` e `realizacoes`; cada tela usa explicitamente `StreamBuilder<List<Habit>>` e `ListView.builder` | `habits_list_screen.dart`, `habit_history_screen.dart`, `watchHabits`, `watchRealizations` |
 
-Recomendado: **Flutter 3.47.7 / Dart 3.13.5**, versões usadas na validação. Dependências fixadas em pubspec.lock. Com Flutter estável instalado, execute na raiz:
+Os números acima são os requisitos da Parte 2; a numeração da auditoria antiga corresponde à Parte 1.
 
-~~~sh
+## Configuração Firebase necessária
+
+`lib/firebase_options.dart` já foi gerado por `flutterfire configure --platforms=web` para o projeto **habit-tracker-flutter-81c6c**. Ele é utilizado na inicialização e foi preservado. Isso registra o aplicativo Web; não comprova que os serviços abaixo estejam habilitados. Não foi feita inspeção autenticada nem alteração no Firebase Console nesta implementação.
+
+No Console do projeto:
+
+1. Em **Authentication → Sign-in method**, habilitar **Email/Password** e salvar. O login por link de e-mail não é necessário.
+2. Em **Authentication → Settings → Authorized domains**, conferir o domínio de execução. Para desenvolvimento, adicionar `localhost` se ausente; para hospedagem futura, adicionar o domínio efetivamente utilizado. Não há URL de publicação criada por esta entrega.
+3. Em **Firestore Database**, criar o banco **(default)**, edição Standard, escolhendo conscientemente a região. Começar em modo produção. Não usar regras públicas de modo teste.
+4. Após executar os testes abaixo, publicar o conteúdo exato de `firestore.rules` na aba **Rules** do Firestore. Alternativamente, com Firebase CLI autenticado e projeto conferido, executar manualmente:
+
+   ```sh
+   firebase deploy --only firestore:rules --project habit-tracker-flutter-81c6c
+   ```
+
+   Esse comando publica somente regras. **Não foi executado nesta entrega.** O `firebase.json` aponta para `firestore.rules`, mantém o registro FlutterFire e configura os emuladores locais.
+5. Em **Authentication → Templates → Password reset**, conferir remetente e texto em português. Criar uma conta de teste com um e-mail acessível, solicitar recuperação, conferir spam e abrir o link recebido. O método usa `sendPasswordResetEmail`; a entrega real depende do serviço e do provedor de e-mail.
+
+Referências oficiais: [autenticação por senha em Flutter](https://firebase.google.com/docs/auth/flutter/password-auth), [regras e autenticação](https://firebase.google.com/docs/firestore/security/get-started) e [transações e escritas atômicas](https://firebase.google.com/docs/firestore/manage-data/transactions).
+
+As opções Web identificam o aplicativo; a autorização dos dados depende de Authentication e das regras, não de esconder a API key. Não adicionar chaves privadas ou contas de serviço ao app.
+
+## Executar
+
+Ambiente local: Flutter **3.47.7**, Dart **3.13.5**. Dependências fixadas em `pubspec.lock`.
+
+```sh
 flutter pub get
 flutter run -d chrome --web-port 7357
-~~~
+```
 
-Alternativas: flutter run -d edge ou servidor local:
+Alternativa: `flutter run -d web-server --web-port 7357`, abrindo o endereço realmente informado pelo Flutter. O SDK local ignorado pelo Git está em `.tools/flutter`; no PowerShell pode-se usar `.\.tools\flutter\bin\flutter.bat` e `.\.tools\flutter\bin\dart.bat`.
 
-~~~sh
-flutter run -d web-server --web-hostname 127.0.0.1 --web-port 7357
-~~~
+Não há conta demonstrativa em produção: cadastrar uma conta real. A sessão é administrada pelo Firebase Authentication. Inicialização aguarda o primeiro estado de autenticação antes de escolher a rota. Falha de inicialização oferece **Tentar novamente**.
 
-Abra o endereço exibido pelo Flutter. Mantenha a mesma porta para preservar a origem de armazenamento no navegador.
+## Arquitetura e navegação
 
-Para Android, instale Android SDK, aceite as licenças e conecte um dispositivo ou inicie um emulador:
+- `AuthNotifier` e `HabitsNotifier` continuam como `ChangeNotifier` com provider. Os modelos `AppUser` e `Habit` foram reaproveitados; `AppUser` também comporta telefone.
+- `AuthRepository` permanece como contrato; `FirebaseAuthRepository` implementa Auth e perfil no Firestore. Senhas são entregues somente ao SDK Authentication, nunca ao Firestore ou ao armazenamento local.
+- `HabitsRepository` é o contrato de persistência; `FirestoreHabitsRepository` é usado por `main.dart`. As implementações demonstrativas/locais continuam disponíveis exclusivamente para regressão da Parte 1 e não são selecionadas na execução normal.
+- `HabitsNotifier` assina as duas consultas por UID e distribui os eventos aos `StreamBuilder`. As consultas usam `where('uid', isEqualTo: uid)` e `snapshots`; a ordenação ocorre em memória, sem índice composto adicional.
+- Ao trocar usuário, os dados são limpos, as assinaturas anteriores são canceladas e respostas de gerações antigas são descartadas. Os builders também recebem uma chave por UID.
+- Estados de carregamento, vazio, falha e nova tentativa mantêm os componentes e a identidade visual existentes. Falhas de gravação não geram mensagem de sucesso.
 
-~~~sh
-flutter doctor
-flutter doctor --android-licenses
-flutter devices
-flutter run -d <id-do-dispositivo>
-~~~
+Rotas preservadas: `/login`, `/register`, `/recovery`, `/about`, `/home`, `/profile`, `/habits`, `/habits/create`, `/habits/edit`, `/checkin` e `/history`. Rotas privadas exigem usuário autenticado; ID inválido oferece orientação. A navegação continua lateral em telas largas e inferior em telas pequenas.
 
-Neste ambiente foi preparado um SDK isolado em **.tools/flutter**, ignorado pelo Git. No PowerShell, use **.\.tools\flutter\bin\flutter.bat** no lugar de flutter e **.\.tools\flutter\bin\dart.bat** no lugar de dart. Em outro computador use sua própria instalação; esse SDK não faz parte da distribuição.
+## Modelo de dados
 
-## Conta demonstrativa
+| Coleção/documento | Campos |
+| --- | --- |
+| `usuarios/{uid}` | `uid`, `nome`, `telefone`, `email`, `createdAt`, `updatedAt` |
+| `habitos/{habitId}` | `uid`, `title`, `description`, `weekdays`, `createdDay`, `createdAt`, `updatedAt`, `checkins` |
+| `realizacoes/{habitId}` | `uid`, `habitId`, `datas`, `createdDay`, `createdAt`, `updatedAt` |
 
-- E-mail: **estudante@habit.local**
-- Senha: **Habito123!**
-- Toque em **Preencher conta de exemplo** e depois em **Entrar**.
-- Também é possível cadastrar uma conta nova e usá-la durante a mesma execução.
-- A Home começa vazia. **Adicionar hábitos de exemplo** insere dois hábitos e registros antigos somente por ação explícita do usuário.
+`createdAt` e `updatedAt` usam `FieldValue.serverTimestamp()`. `createdDay` e as datas de check-in usam o calendário local `AAAA-MM-DD`, preservando o comportamento da Parte 1. Cada documento de `realizacoes` agrega as datas de **um hábito**, e não representa um único check-in. O histórico expande essas datas em linhas e obtém o título atual pelo ID do hábito.
 
-## Telas e rotas
+### Consistência e segurança
 
-| Tela | Rota | Arquivo em lib/screens |
-| --- | --- | --- |
-| Login | /login | login_screen.dart |
-| Cadastro | /register | register_screen.dart |
-| Recuperação simulada | /recovery | recovery_screen.dart |
-| Sobre | /about | about_screen.dart |
-| Home | /home | home_screen.dart |
-| Perfil protegido | /profile | profile_screen.dart |
-| Listar hábitos | /habits | habits_list_screen.dart |
-| Criar hábito | /habits/create | create_habit_screen.dart |
-| Editar/excluir hábito | /habits/edit | edit_habit_screen.dart |
-| Registrar realização | /checkin | habit_checkin_screen.dart |
-| Histórico | /history | habit_history_screen.dart |
+- Criação grava hábito e documento de realizações na mesma transação.
+- Check-in rele o hábito dentro da transação, adiciona/remove uma data como conjunto e atualiza os dois documentos atomicamente. Repetir a mesma marcação não duplica registros.
+- Edição altera somente título, descrição, frequência e atualização; não sobrescreve os check-ins de outra sessão.
+- Exclusão remove os dois documentos atomicamente, após confirmação na interface. Uma edição atrasada não recria um hábito excluído.
+- Regras exigem `request.auth.uid`, impedem transferência de propriedade, validam campos/tipos/limites e timestamps, e usam `getAfter` para exigir igualdade entre as datas das duas coleções. Exclusão isolada é negada com `existsAfter`. Coleções não declaradas são negadas.
+- As listas devem ser consultadas pelo UID; regras não filtram automaticamente consultas globais. Usuários anônimos e outros UIDs não acessam documentos existentes. Usuários autenticados podem consultar a inexistência de um ID para criar via transação.
+- O aplicativo impede datas futuras e anteriores à criação. As regras validam o formato das datas acrescentadas, unicidade e alteração de no máximo uma data por operação; não validam o calendário completo nem o relógio local do cliente.
 
-As cinco funcionalidades têm telas e arquivos próprios; a Home é adicional. As rotas estão centralizadas em [main.dart](lib/main.dart). Edição recebe o ID do hábito como argumento; registro e histórico aceitam um ID opcional para filtrar um hábito. Rotas privadas mostram o login sem uma conta autenticada. IDs inexistentes exibem um estado informativo.
+## Validar sem produção
 
-## Matriz RF001 a RF007
-
-A matriz relaciona os requisitos às telas e aos arquivos que os implementam. RF006 reúne as cinco funcionalidades específicas; RF007 documenta a listagem de dados com `ListView.builder`.
-
-| Requisito | Implementação | Arquivos principais |
-| --- | --- | --- |
-| RF001 — Login | Logotipo em imagem, obrigatórios, formato de e-mail e credenciais mockadas; links para cadastro e recuperação | [login_screen.dart](lib/screens/login_screen.dart), [auth_notifier.dart](lib/notifiers/auth_notifier.dart), [demo_auth_repository.dart](lib/repositories/demo_auth_repository.dart) |
-| RF002 — Cadastro | Nome, e-mail, telefone, senha e confirmação; validações e acesso após cadastro | [register_screen.dart](lib/screens/register_screen.dart), [validators.dart](lib/services/validators.dart) |
-| RF003 — Recuperação | E-mail validado e simulação explicitamente sem envio de e-mail | [recovery_screen.dart](lib/screens/recovery_screen.dart) |
-| RF004 — Sobre | Objetivo, contexto acadêmico e identificação de Saulo da Silva Stuque Menegucci, RA 2840482511024 | [about_screen.dart](lib/screens/about_screen.dart), [project_info.dart](lib/config/project_info.dart) |
-| RF005 — Perfil | Nome/e-mail autenticados, edição apenas do nome, mínimo de 3 caracteres, confirmação e saudação atualizada | [profile_screen.dart](lib/screens/profile_screen.dart), [auth_notifier.dart](lib/notifiers/auth_notifier.dart), proteção em [main.dart](lib/main.dart) |
-| RF006 — Cinco funcionalidades | Listar hábitos; criar hábito; editar/excluir hábito; registrar realização por data; consultar histórico, cada uma com tela própria | [habits_list_screen.dart](lib/screens/habits_list_screen.dart), [create_habit_screen.dart](lib/screens/create_habit_screen.dart), [edit_habit_screen.dart](lib/screens/edit_habit_screen.dart), [habit_checkin_screen.dart](lib/screens/habit_checkin_screen.dart), [habit_history_screen.dart](lib/screens/habit_history_screen.dart) |
-| RF007 — Listagem de dados | `ListView.builder` constrói os cartões dos hábitos a partir de `HabitsNotifier`, com `itemCount`, `itemBuilder` e orientação quando a lista está vazia | [habits_list_screen.dart](lib/screens/habits_list_screen.dart), [habit_card.dart](lib/widgets/habit_card.dart), [habits_notifier.dart](lib/notifiers/habits_notifier.dart) |
-
-## Funcionalidades de hábitos
-
-1. **Listar:** título, descrição, frequência e acessos a registro, histórico e edição; estado vazio com orientação.
-2. **Criar:** título obrigatório (até 80 caracteres), descrição opcional (até 300) e pelo menos um dia da semana.
-3. **Editar/excluir:** altera informações sem perder registros; exclusão do hábito e registros exige confirmação, com opção de cancelar.
-4. **Registrar:** escolhe uma data e marca/desmarca realização. Impede datas futuras e anteriores à criação. Permite realizar fora dos dias planejados.
-5. **Histórico:** filtro por hábito, registros do mais recente ao mais antigo, total de realizações, dias com realizações e últimos sete dias. Sem pontuação negativa ou sequência que zera após pausas.
-
-## Arquitetura e estado
-
-~~~text
-lib/
-  config/         identificação acadêmica do integrante
-  models/         AppUser e Habit
-  repositories/   contrato de autenticação, mock em memória e hábitos locais
-  notifiers/      AuthNotifier e HabitsNotifier (ChangeNotifier)
-  services/       validações e datas locais
-  screens/        uma tela por arquivo
-  theme/          identidade Material 3
-  widgets/        formulários e componentes compartilhados
-  main.dart       inicialização, providers, rotas e proteção
-~~~
-
-- **AuthNotifier:** conta, perfil, processamento e erros. O repositório publica mudanças e as telas consomem o estado pelo provider.
-- **HabitsNotifier:** lista, frequência e check-ins. Gravações confirmadas notificam as telas relacionadas. A lista publicada é imutável.
-- Na troca de conta, os hábitos visíveis são limpos e recarregados pela identidade atual. Gravações pendentes da conta anterior não substituem o estado da nova conta.
-- JSON versão 1, em chaves **habittracker.v1.habits.<id-do-usuário>** no shared_preferences. Falhas de leitura preservam os dados originais e impedem sobrescrita; falhas de gravação mantêm o estado anterior e mostram feedback.
-- Check-ins são conjuntos de datas locais **AAAA-MM-DD**, sem horário. Repetir a marcação de um hábito no mesmo dia mantém apenas um registro.
-- Navegação lateral em telas largas e inferior nas menores; conteúdo com rolagem; interface e seletor de datas em português brasileiro.
-
-O logotipo de duas folhas é autoral: [logo.svg](assets/images/logo.svg). Variantes PNG e ícones Android/Web estão incluídos. [generate_icons.ps1](tool/generate_icons.ps1) regenera os PNGs no Windows, opcionalmente.
-
-## Limitações da Parte 1
-
-- **Nenhuma recuperação envia e-mail.** A mensagem de resultado declara que a solicitação foi simulada.
-- Não é necessário configurar Firebase ou serviços externos; não existem dependências Firebase no projeto.
-- Contas cadastradas, nome editado e sessão existem **somente em memória**. Fechar/recarregar o app elimina essas informações. A conta fixa de exemplo é recriada ao iniciar.
-- Não há senhas no shared_preferences. O mock mantém apenas verificadores SHA-256 com salt em memória para comparar credenciais. É uma simulação acadêmica, sem garantias de autenticação de produção.
-- O telefone é obrigatório e validado no formulário, mas não é verificado, usado para login ou persistido.
-- Hábitos e check-ins permanecem localmente. A identidade demo deriva do e-mail normalizado: recriar uma conta com o mesmo e-mail recupera seus hábitos locais. Esse isolamento serve à demonstração, sem proteção entre pessoas com acesso ao mesmo dispositivo.
-- Limpar os dados do app/navegador remove o conteúdo. Trocar a origem/porta separa o armazenamento. Não há sincronização entre dispositivos.
-- O APK usa a assinatura de depuração do template Flutter. Publicação em loja está fora do escopo.
-
-**Integrante:** Saulo da Silva Stuque Menegucci — **RA 2840482511024**. A tela Sobre apresenta essa identificação a partir de [project_info.dart](lib/config/project_info.dart).
-
-## Validação e compilação
-
-~~~sh
-flutter pub get
-dart format .
+```sh
 flutter analyze
 flutter test
-flutter build web --no-web-resources-cdn
-flutter build apk --debug
-~~~
+flutter build web
+npm ci
+npm run test:rules
+```
 
-O build Web fica em **build/web**; sirva essa pasta por HTTP. A opção --no-web-resources-cdn inclui o renderizador localmente. Android exige Android SDK e licenças aceitas.
+Para `npm run test:rules`, instalar Node compatível com os pacotes, Firebase CLI e Java 21, com `firebase` no PATH. O comando inicia o emulador, carrega as regras e executa testes com o projeto fictício `demo-habit-tracker`; não usa o banco de produção. As dependências JS são somente para os testes de regras; não são um backend da aplicação. As mensagens `PERMISSION_DENIED` nas tentativas negativas são esperadas quando os testes passam.
 
-Resultados da validação registrada em `.validation/final-audit-analyze.txt` e `.validation/final-audit-test.txt` (arquivos locais, ignorados pelo Git):
+- Testes da Parte 1 continuam cobrindo formulários, CRUD, datas, navegação, logout e layouts em 360/1280 px.
+- Testes Firebase usam `fake_cloud_firestore` e `firebase_auth_mocks` para perfil, UID, tradução de erros, chamada de recuperação, transações, sincronização externa, telas e repetição após falhas.
+- Testes das regras usam o emulador oficial: leitura/escrita entre usuários, consultas, esquema, timestamps, datas malformadas e obrigatoriedade das operações atômicas.
+- Mocks não comprovam entrega de e-mail ou configuração do Console. O emulador valida as regras locais; não comprova que essas regras já estejam publicadas.
 
-- Dependências resolvidas e formatação executada.
-- Análise estática sem problemas.
-- **21 testes automatizados aprovados** em [state_test.dart](test/state_test.dart), [screens_test.dart](test/screens_test.dart) e [final_audit_test.dart](test/final_audit_test.dart).
-- Formulários: obrigatórios, e-mail, credenciais, confirmação de senha, recuperação simulada e nome mínimo do perfil.
-- Estado: CRUD, JSON, separação por usuário, gravação pendente de outra sessão e preservação de dados inválidos.
-- Check-ins: horários distintos no mesmo dia, desmarcação, datas inválidas e progresso preservado após pausas.
-- Fluxo das cinco telas, exclusão com cancelamento/confirmação e rotas em **360 px e 1280 px**, sem overflow.
-- Auditoria final: botões da navegação lateral/inferior, Sobre/Voltar, logout, proteção após saída, seleção de data, desmarcação pela interface e filtro do histórico.
-- Build Web compilado; aplicativo iniciado com flutter run -d web-server e resposta HTTP 200.
-- Android não compilado nem executado neste ambiente: Android SDK/emulador ausente.
-- A integração de navegador do ambiente falhou ao iniciar. A revisão visual usa capturas renderizadas pelos widgets Flutter, sem alegar teste manual de navegador.
+O resultado atualizado dos comandos fica registrado em `VALIDACAO_PARTE_2.md`. O build Web fica em `build/web`. Nenhum deploy da aplicação foi realizado.
 
-Capturas opcionais para revisão visual:
+## Limitações e verificação manual
 
-~~~powershell
-$env:FLUTTER_ROOT = 'CAMINHO_DO_SEU_SDK_FLUTTER'
-flutter test tool/capture_previews.dart
-~~~
+- Somente **Web** foi configurado pelo FlutterFire. Android/iOS/desktop exigem registrar as plataformas e gerar suas opções antes de execução. Não alegamos validação nessas plataformas.
+- Transações exigem conexão; não existe fila própria de gravação offline. A leitura pode usar o cache padrão do SDK. As listas carregam os dados do usuário sem paginação, adequadas ao escopo acadêmico.
+- Para manter exclusão atômica e evitar registros órfãos sem backend, as datas são agregadas por hábito. As regras limitam a 10.000 datas por hábito, também sujeitas ao limite de tamanho do documento Firestore. Uma aplicação de grande escala exigiria outro modelo.
+- Auth e Firestore não compartilham transação. Se a gravação inicial do perfil falhar, tenta-se remover a conta recém-criada e encerra-se a sessão. Se essa compensação falhar, um login posterior repara o perfil ausente com nome disponível e telefone vazio; o telefone original não pode ser recuperado de uma gravação que falhou. Isso requer conferência manual no Console. Contas cujo perfil foi gravado podem entrar novamente após falha na sincronização de `displayName`.
+- Telefone é armazenado, mas não verificado por SMS e não usado para login. A tela de perfil continua editando apenas o nome. Não há exclusão de conta nem mudança de e-mail.
+- Não existe migração automática das contas ou hábitos demonstrativos da Parte 1. UIDs reais não são derivados do e-mail.
+- Antes de apresentar o projeto: cadastrar usuário A, recarregar e conferir sessão/dados, testar recuperação em caixa real, verificar sincronização em duas janelas, editar sem perder registros, desmarcar, excluir e conferir que B não vê A. Esses passos com produção ainda precisam ser executados após configurar o Console e publicar as regras.
 
-As imagens ficam em **.validation/**, ignorada pelo Git.
+Roteiro separado de até quatro minutos: [ROTEIRO_VIDEO_PARTE_2.md](ROTEIRO_VIDEO_PARTE_2.md).
+
+**Integrante:** Saulo da Silva Stuque Menegucci — **RA 2840482511024**.

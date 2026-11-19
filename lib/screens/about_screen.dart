@@ -37,11 +37,11 @@ class AboutScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      'Parte 1 de um projeto acadêmico da disciplina Desenvolvimento Mobile. Desenvolvido com Flutter, Dart, Material 3 e gerenciamento de estado com ChangeNotifier e provider.',
+                      'Parte 2 de um projeto acadêmico da disciplina Desenvolvimento Mobile. Desenvolvido com Flutter, Dart, Material 3 e gerenciamento de estado com ChangeNotifier e provider.',
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'Esta versão é uma demonstração independente, com autenticação simulada e persistência local de hábitos. A recuperação de senha não envia e-mails.',
+                      'Esta versão usa Firebase Authentication e Cloud Firestore para autenticação, recuperação de senha e sincronização dos hábitos por usuário.',
                     ),
                   ],
                 ),
