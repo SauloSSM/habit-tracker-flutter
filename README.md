@@ -110,6 +110,4 @@ O resultado atualizado dos comandos fica registrado em `VALIDACAO_PARTE_2.md`. O
 - Não existe migração automática das contas ou hábitos demonstrativos da Parte 1. UIDs reais não são derivados do e-mail.
 - Antes de apresentar o projeto: cadastrar usuário A, recarregar e conferir sessão/dados, testar recuperação em caixa real, verificar sincronização em duas janelas, editar sem perder registros, desmarcar, excluir e conferir que B não vê A. Esses passos com produção ainda precisam ser executados após configurar o Console e publicar as regras.
 
-Roteiro separado de até quatro minutos: [ROTEIRO_VIDEO_PARTE_2.md](ROTEIRO_VIDEO_PARTE_2.md).
-
 **Integrante:** Saulo da Silva Stuque Menegucci — **RA 2840482511024**.
